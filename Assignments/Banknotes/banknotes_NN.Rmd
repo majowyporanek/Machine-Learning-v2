@@ -5,7 +5,7 @@ jupyter:
       extension: .Rmd
       format_name: rmarkdown
       format_version: '1.2'
-      jupytext_version: 1.19.1
+      jupytext_version: 1.19.3
   kernelspec:
     display_name: Python 3 (ipykernel)
     language: python
@@ -34,7 +34,11 @@ import  matplotlib.pyplot as plt
 plt.rcParams['figure.figsize']=(8,8)
 ```
 
+
 Please insert you  firstname  and name below
+
+Klaudia Chwistek
+Jan Sakłak
 
 ```{python}
 from  sklearn.model_selection import train_test_split
@@ -78,6 +82,7 @@ for i in range(4):
     ax[i].hist(data_train[lbls_train==0].iloc[:,i], bins=32, histtype='bar', color='lightblue', alpha=0.25)
     ax[i].hist(data_train[lbls_train==1].iloc[:,i], bins=32, histtype='bar', color='orange', alpha =0.25)
 ```
+
 
 <!-- #region editable=true slideshow={"slide_type": ""} -->
 # Problem 1
@@ -127,12 +132,13 @@ accuracy_score(y_true, y_pred=y_predicted)
 ```
 
 ```{python editable=TRUE, slideshow={'slide_type': ''}}
-optimizer = torch.optim.SGD(model.parameters(),lr=0.001)
+optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
+loss_fn = tnn.BCELoss()
 ```
 
 ```{python editable=TRUE, slideshow={'slide_type': ''}}
-for era in range(50):
-    for epoch in range(500):
+for era in range(20):
+    for epoch in range(100):
         optimizer.zero_grad()
         pred = model(features_train)
         loss = loss_fn(pred, labels_train)
@@ -143,9 +149,26 @@ for era in range(50):
         acc_train =  torch.mean(0.0+ ((pred > 0.5)== (labels_train>0.5)))
         pred =  model(features_test)
         acc_test =  torch.mean(0.0+ ((pred > 0.5)== (labels_test>0.5)))
-    print(acc_train, acc_test)
+    print(f"Era {era}: Train Acc: {acc_train:.4f}, Test Acc: {acc_test:.4f}")
 ```
 
 ```{python}
+from sklearn.metrics import roc_auc_score, confusion_matrix, ConfusionMatrixDisplay
 
+with torch.no_grad():
+    y_proba = model(features_test)
+    y_pred = (y_proba > 0.5).float()
+
+print(classification_report(labels_test, y_pred))
+```
+
+```{python}
+cm = confusion_matrix(labels_test, y_pred)
+disp = ConfusionMatrixDisplay(confusion_matrix=cm)
+disp.plot()
+```
+
+```{python}
+auc_score = roc_auc_score(labels_test, y_proba)
+print(f"AUC Score: {auc_score:.4f}")
 ```
