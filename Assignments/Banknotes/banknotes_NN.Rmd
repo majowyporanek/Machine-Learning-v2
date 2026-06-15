@@ -34,11 +34,7 @@ import  matplotlib.pyplot as plt
 plt.rcParams['figure.figsize']=(8,8)
 ```
 
-
 Please insert you  firstname  and name below
-
-Klaudia Chwistek
-Jan Sakłak
 
 ```{python}
 from  sklearn.model_selection import train_test_split
@@ -83,7 +79,6 @@ for i in range(4):
     ax[i].hist(data_train[lbls_train==1].iloc[:,i], bins=32, histtype='bar', color='orange', alpha =0.25)
 ```
 
-
 <!-- #region editable=true slideshow={"slide_type": ""} -->
 # Problem 1
 <!-- #endregion -->
@@ -113,7 +108,14 @@ labels_test = torch.from_numpy(data_test.values[:,4:5]).to(dtype=torch.float32)
 ```
 
 ```{python editable=TRUE, slideshow={'slide_type': ''}}
-model = tnn.Sequential(tnn.Linear(in_features=nf, out_features=1), tnn.Sigmoid())
+model = tnn.Sequential(
+    tnn.Linear(in_features=nf, out_features=16),
+    tnn.ReLU(),                          
+    tnn.Linear(in_features=16, out_features=8),
+    tnn.ReLU(),                          
+    tnn.Linear(in_features=8, out_features=1),
+    tnn.Sigmoid()                         
+)
 ```
 
 ```{python editable=TRUE, slideshow={'slide_type': ''}}
@@ -132,13 +134,18 @@ accuracy_score(y_true, y_pred=y_predicted)
 ```
 
 ```{python editable=TRUE, slideshow={'slide_type': ''}}
+#optimizer = torch.optim.SGD(model.parameters(),lr=0.001)
+#Changed to Adam optimizer for better convergence
 optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
+```
+
+```{python}
 loss_fn = tnn.BCELoss()
 ```
 
 ```{python editable=TRUE, slideshow={'slide_type': ''}}
-for era in range(20):
-    for epoch in range(100):
+for era in range(200):
+    for epoch in range(500):
         optimizer.zero_grad()
         pred = model(features_train)
         loss = loss_fn(pred, labels_train)
@@ -149,26 +156,27 @@ for era in range(20):
         acc_train =  torch.mean(0.0+ ((pred > 0.5)== (labels_train>0.5)))
         pred =  model(features_test)
         acc_test =  torch.mean(0.0+ ((pred > 0.5)== (labels_test>0.5)))
-    print(f"Era {era}: Train Acc: {acc_train:.4f}, Test Acc: {acc_test:.4f}")
+    print(acc_train, acc_test)
 ```
 
 ```{python}
 from sklearn.metrics import roc_auc_score, confusion_matrix, ConfusionMatrixDisplay
 
+model.eval()
 with torch.no_grad():
-    y_proba = model(features_test)
-    y_pred = (y_proba > 0.5).float()
+    y_proba = model(features_test).numpy()
+    y_predicted = (y_proba > 0.5).astype(int)
 
-print(classification_report(labels_test, y_pred))
-```
+y_true = labels_test.numpy()
 
-```{python}
-cm = confusion_matrix(labels_test, y_pred)
-disp = ConfusionMatrixDisplay(confusion_matrix=cm)
-disp.plot()
-```
-
-```{python}
-auc_score = roc_auc_score(labels_test, y_proba)
+auc_score = roc_auc_score(y_true, y_proba)
 print(f"AUC Score: {auc_score:.4f}")
+
+cm = confusion_matrix(y_true, y_predicted)
+disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=["Real (0)", "Counterfeit (1)"])
+
+fig, ax = plt.subplots(figsize=(6, 6))
+disp.plot(cmap=plt.cm.Blues, ax=ax)
+plt.title("Confusion Matrix for Banknote Counterfeit Detection")
+plt.show()
 ```
